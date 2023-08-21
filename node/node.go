@@ -1045,7 +1045,7 @@ func (app *App) initService(ctx context.Context, svc grpcserver.Service) (grpcse
 	case grpcserver.Debug:
 		return grpcserver.NewDebugService(app.db, app.conState, app.host, app.hOracle, logger.WithName("Debug")), nil
 	case grpcserver.GlobalState:
-		return grpcserver.NewGlobalStateService(app.mesh, app.conState, logger.WithName("GlobalState")), nil
+		return grpcserver.NewGlobalStateService(app.mesh, app.conState, logger.WithName("GlobalState"), app.cachedDB), nil
 	case grpcserver.Mesh:
 		return grpcserver.NewMeshService(app.cachedDB, app.mesh, app.conState, app.clock, app.Config.LayersPerEpoch, app.Config.Genesis.GenesisID(), app.Config.LayerDuration, app.Config.LayerAvgSize, uint32(app.Config.TxsPerProposal), logger.WithName("Mesh")), nil
 	case grpcserver.Node:

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/spacemeshos/go-spacemesh/common/types"
+	"github.com/spacemeshos/go-spacemesh/datastore"
 	"github.com/spacemeshos/go-spacemesh/events"
 	"github.com/spacemeshos/go-spacemesh/log"
 )
@@ -17,6 +18,7 @@ import (
 // GlobalStateService exposes global state data, output from the STF.
 type GlobalStateService struct {
 	logger   log.Logger
+	cdb      *datastore.CachedDB
 	mesh     meshAPI
 	conState conservativeState
 }
@@ -27,9 +29,10 @@ func (s GlobalStateService) RegisterService(server *Server) {
 }
 
 // NewGlobalStateService creates a new grpc service using config data.
-func NewGlobalStateService(msh meshAPI, conState conservativeState, lg log.Logger) *GlobalStateService {
+func NewGlobalStateService(msh meshAPI, conState conservativeState, lg log.Logger, cdb *datastore.CachedDB) *GlobalStateService {
 	return &GlobalStateService{
 		logger:   lg,
+		cdb:      cdb,
 		mesh:     msh,
 		conState: conState,
 	}
@@ -138,6 +141,12 @@ func (s GlobalStateService) AccountDataQuery(_ context.Context, in *pb.AccountDa
 			return nil, status.Errorf(codes.Internal, "error getting rewards data")
 		}
 		for _, r := range dbRewards {
+
+			smesherId, err := getSmesherId(s, r)
+			if err != nil {
+				return nil, err
+			}
+
 			res.AccountItem = append(res.AccountItem, &pb.AccountData{Datum: &pb.AccountData_Reward{
 				Reward: &pb.Reward{
 					Layer:       &pb.LayerNumber{Number: r.Layer.Uint32()},
@@ -147,6 +156,9 @@ func (s GlobalStateService) AccountDataQuery(_ context.Context, in *pb.AccountDa
 					// See https://github.com/spacemeshos/go-spacemesh/issues/2275
 					// LayerComputed: 0,
 					Coinbase: &pb.AccountId{Address: addr.String()},
+					Smesher: &pb.SmesherId{
+						Id: smesherId,
+					},
 				},
 			}})
 		}
@@ -190,6 +202,26 @@ func (s GlobalStateService) AccountDataQuery(_ context.Context, in *pb.AccountDa
 	}
 	res.AccountItem = res.AccountItem[offset : offset+maxResults]
 	return res, nil
+}
+
+func getSmesherId(s GlobalStateService, r *types.Reward) ([]byte, error) {
+	layer, _ := s.mesh.GetLayer(r.Layer)
+	var smesherId []byte
+	for _, b := range layer.Blocks() {
+		for _, br := range b.Rewards {
+			atxVer, err := s.cdb.GetFullAtx(br.AtxID)
+			if err != nil {
+				s.logger.With().Error("could not read atx from database", br.AtxID, log.Err(err))
+				return nil, status.Errorf(codes.Internal, "error reading atx data")
+			}
+			if atxVer.Coinbase.String() == r.Coinbase.String() {
+				smesherId = atxVer.SmesherID.Bytes()
+				break
+			}
+
+		}
+	}
+	return smesherId, nil
 }
 
 // SmesherDataQuery returns historical info on smesher rewards.
