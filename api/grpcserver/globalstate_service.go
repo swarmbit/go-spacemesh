@@ -209,13 +209,13 @@ func getSmesherId(s GlobalStateService, r *types.Reward) ([]byte, error) {
 	var smesherId []byte
 	for _, b := range layer.Blocks() {
 		for _, br := range b.Rewards {
-			atxVer, err := s.cdb.GetFullAtx(br.AtxID)
+			atxHdr, err := s.cdb.GetAtxHeader(br.AtxID)
 			if err != nil {
-				s.logger.With().Error("could not read atx from database", br.AtxID, log.Err(err))
-				return nil, status.Errorf(codes.Internal, "error reading atx data")
+				s.logger.With().Error("could not get atx header", br.AtxID, log.Err(err))
+				return nil, status.Errorf(codes.Internal, "error reading atx header")
 			}
-			if atxVer.Coinbase.String() == r.Coinbase.String() {
-				smesherId = atxVer.SmesherID.Bytes()
+			if atxHdr.Coinbase.String() == r.Coinbase.String() {
+				smesherId = atxHdr.NodeID.Bytes()
 				break
 			}
 
