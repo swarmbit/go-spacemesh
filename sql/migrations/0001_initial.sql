@@ -58,6 +58,7 @@ CREATE TABLE rewards
     pubkey              CHAR(32),
     PRIMARY KEY (coinbase, layer)
 ) WITHOUT ROWID;
+CREATE INDEX rewards_by_pubkey ON rewards (pubkey, layer);
 CREATE INDEX rewards_by_coinbase ON rewards (coinbase, layer);
 CREATE INDEX rewards_by_layer ON rewards (layer asc);
 
