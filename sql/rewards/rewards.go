@@ -10,7 +10,7 @@ import (
 // Add reward to the database.
 func Add(db sql.Executor, reward *types.Reward) error {
 	if _, err := db.Exec(`
-		insert into rewards (coinbase, layer, total_reward, layer_reward) values (?1, ?2, ?3, ?4)
+		insert into rewards (coinbase, layer, total_reward, layer_reward, pubkey) values (?1, ?2, ?3, ?4)
 		on conflict(coinbase, layer)
 			do update set
 				total_reward=add_uint64(total_reward, ?3),
@@ -20,6 +20,7 @@ func Add(db sql.Executor, reward *types.Reward) error {
 			stmt.BindInt64(2, int64(reward.Layer.Uint32()))
 			stmt.BindInt64(3, int64(reward.TotalReward))
 			stmt.BindInt64(4, int64(reward.LayerReward))
+			stmt.BindBytes(5, reward.SmesherID.Bytes())
 		}, nil); err != nil {
 		return fmt.Errorf("insert %+x: %w", reward, err)
 	}
