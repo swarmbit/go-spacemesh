@@ -1,11 +1,9 @@
 package mesh
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"sync"
 	"time"
 
@@ -175,9 +173,6 @@ func (e *Executor) convertRewards(rewards []types.AnyReward) ([]types.CoinbaseRe
 			Weight:   r.Weight,
 		})
 	}
-	sort.Slice(res, func(i, j int) bool {
-		return bytes.Compare(res[i].Coinbase.Bytes(), res[j].Coinbase.Bytes()) < 0
-	})
 	return res, nil
 }
 

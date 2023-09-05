@@ -1,8 +1,10 @@
 package vm
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/spacemeshos/economics/rewards"
 
@@ -90,5 +92,9 @@ func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, bl
 	subsidyCount.Add(float64(subsidy))
 	rewardsCount.Add(float64(transferred))
 	burntCount.Add(float64(total - transferred))
+
+	sort.Slice(result, func(i, j int) bool {
+		return bytes.Compare(result[i].Coinbase.Bytes(), result[j].Coinbase.Bytes()) < 0
+	})
 	return result, nil
 }
