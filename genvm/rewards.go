@@ -23,6 +23,11 @@ func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, bl
 		totalWeight.Add(totalWeight, blockReward.Weight.ToBigRat())
 	}
 	result := make([]types.Reward, 0, len(blockRewards))
+
+	if len(blockRewards) != len(anyRewards) {
+		return nil, fmt.Errorf("%w: block rewards length different from any rewards length",
+			core.ErrInternal)
+	}
 	for index, blockReward := range blockRewards {
 		anyReward := anyRewards[index]
 		relative := blockReward.Weight.ToBigRat()
