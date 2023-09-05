@@ -5,8 +5,7 @@ CREATE TABLE rewards_atxs
     coinbase    CHAR(24),
     layer       INT NOT NULL,
     total_reward UNSIGNED LONG INT,
-    layer_reward UNSIGNED LONG INT,
-    PRIMARY KEY (pid)
+    layer_reward UNSIGNED LONG INT
 ) WITHOUT ROWID;
 
 CREATE INDEX rewards_atxs_by_coinbase ON rewards_atxs (coinbase, layer);
