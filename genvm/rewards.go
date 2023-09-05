@@ -11,7 +11,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/log"
 )
 
-func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, blockRewards []types.CoinbaseReward) ([]types.Reward, error) {
+func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, blockRewards []types.CoinbaseReward, anyRewards []types.AnyReward) ([]types.Reward, error) {
 	var (
 		layersAfterEffectiveGenesis = lctx.Layer.Difference(types.FirstEffectiveGenesis())
 		subsidy                     = rewards.TotalSubsidyAtLayer(layersAfterEffectiveGenesis)
@@ -23,7 +23,8 @@ func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, bl
 		totalWeight.Add(totalWeight, blockReward.Weight.ToBigRat())
 	}
 	result := make([]types.Reward, 0, len(blockRewards))
-	for _, blockReward := range blockRewards {
+	for index, blockReward := range blockRewards {
+		anyReward := anyRewards[index]
 		relative := blockReward.Weight.ToBigRat()
 		relative.Quo(relative, totalWeight)
 
@@ -58,7 +59,7 @@ func (v *VM) addRewards(lctx ApplyContext, ss *core.StagedCache, fees uint64, bl
 			Coinbase:    blockReward.Coinbase,
 			TotalReward: totalReward.Uint64(),
 			LayerReward: subsidyReward.Uint64(),
-			SmesherID:   blockReward.SmesherID,
+			AtxID:       anyReward.AtxID,
 		}
 		result = append(result, reward)
 		account, err := ss.Get(blockReward.Coinbase)

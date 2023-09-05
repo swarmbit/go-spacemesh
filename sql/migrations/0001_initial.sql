@@ -55,10 +55,8 @@ CREATE TABLE rewards
     layer        INT NOT NULL,
     total_reward UNSIGNED LONG INT,
     layer_reward UNSIGNED LONG INT,
-    pubkey              CHAR(32),
     PRIMARY KEY (coinbase, layer)
 ) WITHOUT ROWID;
-CREATE INDEX rewards_by_pubkey ON rewards (pubkey, layer);
 CREATE INDEX rewards_by_coinbase ON rewards (coinbase, layer);
 CREATE INDEX rewards_by_layer ON rewards (layer asc);
 
