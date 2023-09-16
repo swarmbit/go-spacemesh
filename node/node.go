@@ -467,6 +467,15 @@ func (app *App) Initialize() error {
 	// override default config in timesync since timesync is using TimeConfigValues
 	timeCfg.TimeConfigValues = app.Config.TIME
 
+	// configure nats before initializing the reporter
+	if app.Config.NATS.NatsEnabled {
+		natsConnector, err := nats.NewNatsConnector(app.Config.NATS)
+		if err != nil {
+			return fmt.Errorf("cannot start services: %w", err)
+		}
+		app.natsConnector = natsConnector
+	}
+
 	app.setupLogging()
 	app.log.Info("Welcome to Spacemesh. Spacemesh full node is starting...")
 
@@ -479,7 +488,7 @@ func (app *App) Initialize() error {
 // setupLogging configured the app logging system.
 func (app *App) setupLogging() {
 	app.log.Info("%s", app.getAppInfo())
-	events.InitializeReporter()
+	events.InitializeReporter(app.natsConnector)
 }
 
 func (app *App) getAppInfo() string {
@@ -1186,11 +1195,6 @@ func (app *App) stopServices(ctx context.Context) {
 		_ = app.grpcPrivateService.Close()
 	}
 
-	if app.natsConnector != nil {
-		app.log.Info("stopping nats connector")
-		app.natsConnector.Close()
-	}
-
 	if app.updater != nil {
 		app.log.Info("stopping updater")
 		app.updater.Close()
@@ -1477,13 +1481,6 @@ func (app *App) startSynchronous(ctx context.Context) (err error) {
 
 	if app.Config.CollectMetrics {
 		metrics.StartMetricsServer(app.Config.MetricsPort)
-	}
-
-	if app.Config.NATS.NatsEnabled {
-		app.natsConnector, err = nats.NewNatsConnector(app.Config.NATS)
-		if err != nil {
-			return fmt.Errorf("cannot start services: %w", err)
-		}
 	}
 
 	if app.Config.PublicMetrics.MetricsURL != "" {

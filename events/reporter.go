@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/hex"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/spacemeshos/go-spacemesh/common/types"
 	"github.com/spacemeshos/go-spacemesh/log"
+	"github.com/spacemeshos/go-spacemesh/nats"
 )
 
 // Subscription is a subscription to events.
@@ -26,13 +28,16 @@ var (
 // InitializeReporter initializes the event reporting interface with
 // a nonzero channel buffer. This is useful for testing, where we want reporting to
 // block.
-func InitializeReporter() {
+func InitializeReporter(natsConnector *nats.NatsConnector) {
 	mu.Lock()
 	defer mu.Unlock()
 	if reporter != nil {
 		return
 	}
-	reporter = newEventReporter()
+	if natsConnector != nil {
+		log.With().Info("Nat connector enabled on monitor")
+	}
+	reporter = newEventReporter(natsConnector)
 }
 
 // EventHook returns hook for logger.
@@ -85,6 +90,18 @@ func ReportNewActivation(activation *types.VerifiedActivationTx) {
 			// TODO(nkryuchkov): consider returning an error and log outside the function
 			log.With().Error("Failed to emit activation", activation.ID(), activation.PublishEpoch, log.Err(err))
 		}
+
+		if reporter.natsConnector != nil && activation != nil {
+			reporter.natsConnector.PublishATX(&nats.Atx{
+				NodeID:            activation.SmesherID.String(),
+				AtxID:             hex.EncodeToString(activation.ID().Bytes()),
+				EffectiveNumUnits: activation.EffectiveNumUnits(),
+				BaseTick:          activation.BaseTickHeight(),
+				TickCount:         activation.TickCount(),
+				Received:          activation.Received().UnixMilli(),
+				Sequence:          activation.Sequence,
+			})
+		}
 	}
 }
 
@@ -100,7 +117,19 @@ func ReportRewardReceived(r Reward) {
 		} else {
 			log.Debug("reported reward: %v", r)
 		}
+
+		if reporter.natsConnector != nil {
+			reporter.natsConnector.PublishRewards(&nats.Reward{
+				Coinbase:    r.Coinbase.String(),
+				Total:       r.Total,
+				LayerReward: r.LayerReward,
+				NodeID:      r.NodeID.String(),
+				AtxID:       hex.EncodeToString(r.AtxID.Bytes()),
+				Layer:       int(r.Layer),
+			})
+		}
 	}
+
 }
 
 // ReportLayerUpdate reports a new layer, or an update to an existing layer.
@@ -114,6 +143,12 @@ func ReportLayerUpdate(layer LayerUpdate) {
 			log.With().Error("Failed to emit updated layer", layer, log.Err(err))
 		} else {
 			log.With().Debug("reported new or updated layer", layer)
+		}
+		if reporter.natsConnector != nil {
+			reporter.natsConnector.PublishLayer(&nats.LayerUpdate{
+				LayerID: int(layer.LayerID),
+				Status:  layer.Status,
+			})
 		}
 	}
 }
@@ -428,6 +463,7 @@ type Account struct {
 
 // EventReporter is the struct that receives incoming events and dispatches them.
 type EventReporter struct {
+	natsConnector      *nats.NatsConnector
 	bus                event.Bus
 	transactionEmitter event.Emitter
 	activationEmitter  event.Emitter
@@ -465,7 +501,7 @@ func (r *EventReporter) subUserEvents(opts ...SubOpt) (*BufferedSubscription[Use
 	return sub, buf, nil
 }
 
-func newEventReporter() *EventReporter {
+func newEventReporter(natsConnector *nats.NatsConnector) *EventReporter {
 	bus := eventbus.NewBus()
 	transactionEmitter, err := bus.Emitter(new(Transaction))
 	if err != nil {
@@ -513,6 +549,7 @@ func newEventReporter() *EventReporter {
 	}
 
 	reporter := &EventReporter{
+		natsConnector:      natsConnector,
 		bus:                bus,
 		transactionEmitter: transactionEmitter,
 		activationEmitter:  activationEmitter,
