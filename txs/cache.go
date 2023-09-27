@@ -693,13 +693,13 @@ func (c *Cache) ApplyLayer(
 	for _, rst := range results {
 		byPrincipal[rst.Principal] = struct{}{}
 		toCleanup[rst.Principal] = struct{}{}
+		events.ReportResult(rst)
 		if !c.has(rst.ID) {
 			RawTxCount.WithLabelValues(updated).Inc()
 			if err := transactions.Add(db, &rst.Transaction, time.Now()); err != nil {
 				return err
 			}
 		}
-		events.ReportResult(rst)
 	}
 
 	for _, tx := range ineffective {
