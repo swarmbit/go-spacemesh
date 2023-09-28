@@ -223,6 +223,17 @@ func (v *VM) Apply(lctx ApplyContext, txs []types.Transaction, blockRewards []ty
 	}
 	defer tx.Release()
 
+	for index, reward := range rewardsResult {
+		events.ReportRewardReceived(events.Reward{
+			Layer:       reward.Layer,
+			Total:       reward.TotalReward,
+			LayerReward: reward.LayerReward,
+			Coinbase:    reward.Coinbase,
+			AtxID:       reward.AtxID,
+			NodeID:      reward.NodeID,
+		}, index)
+	}
+
 	for _, reward := range rewardsResult {
 		if err := rewards.Add(tx, &reward); err != nil {
 			return nil, nil, fmt.Errorf("%w: %w", core.ErrInternal, err)
@@ -257,14 +268,6 @@ func (v *VM) Apply(lctx ApplyContext, txs []types.Transaction, blockRewards []ty
 		events.ReportAccountUpdate(account.Address)
 		return true
 	})
-	for _, reward := range rewardsResult {
-		events.ReportRewardReceived(events.Reward{
-			Layer:       reward.Layer,
-			Total:       reward.TotalReward,
-			LayerReward: reward.LayerReward,
-			Coinbase:    reward.Coinbase,
-		})
-	}
 
 	blockDurationPersist.Observe(float64(time.Since(t3)))
 	blockDuration.Observe(float64(time.Since(t1)))
