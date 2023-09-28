@@ -59,6 +59,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/metrics"
 	"github.com/spacemeshos/go-spacemesh/metrics/public"
 	"github.com/spacemeshos/go-spacemesh/miner"
+	"github.com/spacemeshos/go-spacemesh/nats"
 	"github.com/spacemeshos/go-spacemesh/node/mapstructureutil"
 	"github.com/spacemeshos/go-spacemesh/p2p"
 	"github.com/spacemeshos/go-spacemesh/p2p/pubsub"
@@ -318,6 +319,7 @@ type App struct {
 	Config             *config.Config
 	db                 *sql.Database
 	dbMetrics          *dbmetrics.DBMetricsCollector
+	natsConnector      *nats.NatsConnector
 	grpcPublicService  *grpcserver.Server
 	grpcPrivateService *grpcserver.Server
 	jsonAPIService     *grpcserver.JSONHTTPServer
@@ -463,6 +465,15 @@ func (app *App) Initialize() error {
 	// override default config in timesync since timesync is using TimeConfigValues
 	timeCfg.TimeConfigValues = app.Config.TIME
 
+	// configure nats before initializing the reporter
+	if app.Config.NATS.NatsEnabled {
+		natsConnector, err := nats.NewNatsConnector(app.Config.NATS)
+		if err != nil {
+			return fmt.Errorf("cannot start services: %w", err)
+		}
+		app.natsConnector = natsConnector
+	}
+
 	app.setupLogging()
 	app.log.Info("Welcome to Spacemesh. Spacemesh full node is starting...")
 
@@ -475,7 +486,7 @@ func (app *App) Initialize() error {
 // setupLogging configured the app logging system.
 func (app *App) setupLogging() {
 	app.log.Info("%s", app.getAppInfo())
-	events.InitializeReporter()
+	events.InitializeReporter(app.natsConnector)
 }
 
 func (app *App) getAppInfo() string {
