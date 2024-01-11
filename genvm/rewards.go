@@ -64,6 +64,7 @@ func (v *VM) addRewards(
 			SmesherID:   blockReward.SmesherID,
 			TotalReward: totalReward.Uint64(),
 			LayerReward: subsidyReward.Uint64(),
+			AtxID:       blockReward.AtxID,
 		}
 		result = append(result, reward)
 		account, err := ss.Get(blockReward.Coinbase)

@@ -21,6 +21,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/fetch"
 	eligConfig "github.com/spacemeshos/go-spacemesh/hare/eligibility/config"
 	"github.com/spacemeshos/go-spacemesh/hare3"
+	"github.com/spacemeshos/go-spacemesh/nats"
 	"github.com/spacemeshos/go-spacemesh/p2p"
 	"github.com/spacemeshos/go-spacemesh/syncer"
 	timeConfig "github.com/spacemeshos/go-spacemesh/timesync/config"
@@ -155,6 +156,7 @@ func MainnetConfig() Config {
 			DataDir:  os.TempDir(),
 			Interval: 30 * time.Second,
 		},
+		NATS:        nats.DefaultConfig(),
 		P2P:         p2pconfig,
 		API:         grpcserver.DefaultConfig(),
 		TIME:        timeConfig.DefaultConfig(),

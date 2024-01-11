@@ -149,6 +149,7 @@ type Reward struct {
 	LayerReward uint64
 	Coinbase    Address
 	SmesherID   NodeID
+	AtxID       ATXID
 }
 
 // NewRawTx computes id from raw bytes and returns the object.

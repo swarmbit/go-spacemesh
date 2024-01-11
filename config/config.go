@@ -22,6 +22,7 @@ import (
 	vm "github.com/spacemeshos/go-spacemesh/genvm"
 	eligConfig "github.com/spacemeshos/go-spacemesh/hare/eligibility/config"
 	"github.com/spacemeshos/go-spacemesh/hare3"
+	"github.com/spacemeshos/go-spacemesh/nats"
 	"github.com/spacemeshos/go-spacemesh/p2p"
 	"github.com/spacemeshos/go-spacemesh/syncer"
 	timeConfig "github.com/spacemeshos/go-spacemesh/timesync/config"
@@ -51,6 +52,7 @@ type Config struct {
 	Tortoise        tortoise.Config       `mapstructure:"tortoise"`
 	P2P             p2p.Config            `mapstructure:"p2p"`
 	API             grpcserver.Config     `mapstructure:"api"`
+	NATS            nats.Config           `mapstructure:"nats"`
 	HARE3           hare3.Config          `mapstructure:"hare3"`
 	HareEligibility eligConfig.Config     `mapstructure:"hare-eligibility"`
 	Certificate     blocks.CertConfig     `mapstructure:"certificate"`
@@ -160,6 +162,7 @@ func DefaultConfig() Config {
 		Tortoise:        tortoise.DefaultConfig(),
 		P2P:             p2p.DefaultConfig(),
 		API:             grpcserver.DefaultConfig(),
+		NATS:            nats.DefaultConfig(),
 		HARE3:           hare3.DefaultConfig(),
 		HareEligibility: eligConfig.DefaultConfig(),
 		Beacon:          beacon.DefaultConfig(),
