@@ -227,6 +227,17 @@ func (v *VM) Apply(
 	}
 	defer tx.Release()
 
+	for index, reward := range rewardsResult {
+		events.ReportRewardReceived(events.Reward{
+			Layer:       reward.Layer,
+			Total:       reward.TotalReward,
+			LayerReward: reward.LayerReward,
+			Coinbase:    reward.Coinbase,
+			AtxID:       reward.AtxID,
+			SmesherID:   reward.SmesherID,
+		}, index)
+	}
+
 	for _, reward := range rewardsResult {
 		if err := rewards.Add(tx, &reward); err != nil {
 			return nil, nil, fmt.Errorf("%w: %w", core.ErrInternal, err)
@@ -261,15 +272,6 @@ func (v *VM) Apply(
 		events.ReportAccountUpdate(account.Address)
 		return true
 	})
-	for _, reward := range rewardsResult {
-		events.ReportRewardReceived(events.Reward{
-			Layer:       reward.Layer,
-			Total:       reward.TotalReward,
-			LayerReward: reward.LayerReward,
-			Coinbase:    reward.Coinbase,
-			SmesherID:   reward.SmesherID,
-		})
-	}
 
 	blockDurationPersist.Observe(float64(time.Since(t3)))
 	blockDuration.Observe(float64(time.Since(t1)))
