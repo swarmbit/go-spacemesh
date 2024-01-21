@@ -108,6 +108,7 @@ type AnyReward struct {
 
 // CoinbaseReward contains the reward information by coinbase and smesher, used as an interface to VM.
 type CoinbaseReward struct {
+	AtxID     ATXID
 	SmesherID NodeID
 	Coinbase  Address
 	Weight    RatNum
