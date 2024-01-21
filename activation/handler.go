@@ -413,6 +413,7 @@ func (h *Handler) storeAtx(ctx context.Context, atx *types.VerifiedActivationTx)
 				)
 			}
 		}
+		events.ReportNewActivation(atx)
 		if err := atxs.Add(dbtx, atx); err != nil && !errors.Is(err, sql.ErrObjectExists) {
 			return fmt.Errorf("add atx to db: %w", err)
 		}
@@ -581,7 +582,7 @@ func (h *Handler) processAtx(ctx context.Context, expHash types.Hash32, peer p2p
 	if err := h.ProcessAtx(ctx, vAtx); err != nil {
 		return fmt.Errorf("cannot process atx %v: %w", atx.ShortString(), err)
 	}
-	events.ReportNewActivation(vAtx)
+
 	h.log.WithContext(ctx).With().Info("new atx", log.Inline(vAtx))
 	return nil
 }
