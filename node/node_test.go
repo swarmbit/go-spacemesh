@@ -378,7 +378,7 @@ func TestSpacemeshApp_NodeService(t *testing.T) {
 	run := func(c *cobra.Command, args []string) error {
 		// Give the error channel a buffer
 		events.CloseEventReporter()
-		events.InitializeReporter()
+		events.InitializeReporter(nil)
 
 		// Speed things up a little
 		app.Config.Sync.Interval = time.Second
