@@ -467,11 +467,11 @@ func (h *Handler) storeAtx(ctx context.Context, atx *types.VerifiedActivationTx)
 			)
 		}
 
-		events.ReportNewActivation(atx)
 		nonce, err = atxs.AddGettingNonce(tx, atx)
 		if err != nil && !errors.Is(err, sql.ErrObjectExists) {
 			return fmt.Errorf("add atx to db: %w", err)
 		}
+		events.ReportNewActivation(atx)
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("store atx: %w", err)

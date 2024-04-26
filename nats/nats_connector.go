@@ -2,7 +2,6 @@ package nats
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/nats-io/nats.go"
 	"github.com/spacemeshos/go-spacemesh/log"
@@ -11,6 +10,7 @@ import (
 type NatsConnector struct {
 	nc *nats.Conn
 	js nats.JetStreamContext
+	config Config
 }
 
 func NewNatsConnector(config Config) (*NatsConnector, error) {
@@ -53,6 +53,7 @@ func NewNatsConnector(config Config) (*NatsConnector, error) {
 	return &NatsConnector{
 		nc: nc,
 		js: js,
+		config: config,
 	}, err
 
 }
@@ -116,13 +117,17 @@ func (n *NatsConnector) PublishLayer(layerUpdate *LayerUpdate) {
 		log.With().Warning("failed to serialize event")
 		panic("Failed to serialize layer")
 	}
-	log.Info("Publish layers")
-	ack, err := n.js.Publish("layers", jsonData)
-	if err != nil {
-		panic("failed to publish layers: " + err.Error())
+	if n.config.NatsAsyncLayers {
+		_, err = n.js.PublishAsync("layers", jsonData)
+		if err != nil {
+			panic("failed to publish layers: " + err.Error())
+		}
+	} else {
+		_, err = n.js.Publish("layers", jsonData)
+		if err != nil {
+			panic("failed to publish layers: " + err.Error())
+		}
 	}
-	log.Info("Published layers: " + fmt.Sprintf("%d", ack.Sequence))
-
 }
 
 func (n *NatsConnector) PublishRewards(reward *Reward) {
@@ -131,12 +136,17 @@ func (n *NatsConnector) PublishRewards(reward *Reward) {
 		log.Warning("failed to serialize event")
 		panic("Failed to serialize rewards")
 	}
-	log.Info("Publish rewards")
-	ack, err := n.js.Publish("rewards", jsonData)
-	if err != nil {
-		panic("failed to publish rewards: " + err.Error())
+	if n.config.NatsAsyncRewards {
+		_, err = n.js.PublishAsync("rewards", jsonData)
+		if err != nil {
+			panic("failed to publish rewards: " + err.Error())
+		}
+	} else {
+		_, err = n.js.Publish("rewards", jsonData)
+		if err != nil {
+			panic("failed to publish rewards: " + err.Error())
+		}
 	}
-	log.Info("Published rewards: " + fmt.Sprintf("%d", ack.Sequence))
 }
 
 func (n *NatsConnector) PublishATX(atx *Atx) {
@@ -145,12 +155,17 @@ func (n *NatsConnector) PublishATX(atx *Atx) {
 		log.Warning("failed to serialize event")
 		panic("Failed to serialize transaction atx")
 	}
-	log.Info("Publish ATX")
-	ack, err := n.js.Publish("atx", jsonData)
-	if err != nil {
-		panic("failed to publish atx: " + err.Error())
+	if n.config.NatsAsyncAtx {
+		_, err = n.js.PublishAsync("atx", jsonData)
+		if err != nil {
+			panic("failed to publish atx: " + err.Error())
+		}
+	} else {
+		_, err = n.js.Publish("atx", jsonData)
+		if err != nil {
+			panic("failed to publish atx: " + err.Error())
+		}
 	}
-	log.Info("Published atx: " + fmt.Sprintf("%d", ack.Sequence))
 }
 
 func (n *NatsConnector) PublishNewTransaction(transaction *Transaction) {
@@ -159,11 +174,18 @@ func (n *NatsConnector) PublishNewTransaction(transaction *Transaction) {
 		log.Warning("failed to serialize event")
 		panic("Failed to serialize new transaction")
 	}
-	ack, err := n.js.Publish("transactions.created", jsonData)
-	if err != nil {
-		panic("failed to publish transactions.created: " + err.Error())
+	if n.config.NatsAsyncTransactions {
+		_, err = n.js.PublishAsync("transactions.created", jsonData)
+		if err != nil {
+			panic("failed to publish transactions.created: " + err.Error())
+		}
+	} else {
+		_, err = n.js.Publish("transactions.created", jsonData)
+		if err != nil {
+			panic("failed to publish transactions.created: " + err.Error())
+		}
 	}
-	log.Info("Published transactions.created: " + fmt.Sprintf("%d", ack.Sequence))
+
 }
 
 func (n *NatsConnector) PublishTransactionResult(transaction *Transaction) {
@@ -172,12 +194,17 @@ func (n *NatsConnector) PublishTransactionResult(transaction *Transaction) {
 		log.Warning("failed to serialize event")
 		panic("Failed to serialize transaction result")
 	}
-	log.Info("Publish Transaction Result")
-	ack, err := n.js.Publish("transactions.result", jsonData)
-	if err != nil {
-		panic("failed to publish transactions.result: " + err.Error())
+	if n.config.NatsAsyncTransactionsResult {
+		_, err = n.js.PublishAsync("transactions.result", jsonData)
+		if err != nil {
+			panic("failed to publish transactions.result: " + err.Error())
+		}
+	} else  {
+		_, err = n.js.Publish("transactions.result", jsonData)
+		if err != nil {
+			panic("failed to publish transactions.result: " + err.Error())
+		}
 	}
-	log.Info("Published transactions.result: " + fmt.Sprintf("%d", ack.Sequence))
 }
 
 func (n *NatsConnector) PublishMalfeasance(malfeasance *Malfeasance) {
@@ -186,11 +213,17 @@ func (n *NatsConnector) PublishMalfeasance(malfeasance *Malfeasance) {
 		log.Warning("failed to serialize event")
 		panic("Failed to serialize malfeasance")
 	}
-	log.Info("Publish malfeasance")
 
-	ack, err := n.js.Publish("malfeasance", jsonData)
-	if err != nil {
-		panic("failed to publish malfeasance: " + err.Error())
+	if n.config.NatsAsyncAtx {
+		_, err = n.js.PublishAsync("malfeasance", jsonData)
+		if err != nil {
+			panic("failed to publish malfeasance: " + err.Error())
+		}
+	} else {
+		_, err = n.js.Publish("malfeasance", jsonData)
+		if err != nil {
+			panic("failed to publish malfeasance: " + err.Error())
+		}
 	}
-	log.Info("Published malfeasance: " + fmt.Sprintf("%d", ack.Sequence))
+
 }
