@@ -20,7 +20,7 @@ func NewNatsConnector(config Config) (*NatsConnector, error) {
 		log.With().Warning("failed to connect to nats")
 		return &NatsConnector{}, err
 	}
-	js, err := nc.JetStream()
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(100000))
 	if err != nil {
 		log.With().Warning("failed to create jetstream")
 		return &NatsConnector{}, err
