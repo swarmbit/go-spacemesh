@@ -706,6 +706,7 @@ func (c *Cache) ApplyLayer(
 	// TODO(dshulyak) save results in vm
 	if err := db.WithTx(context.Background(), func(dbtx *sql.Tx) error {
 		for _, rst := range results {
+			events.ReportResult(rst)
 			err := transactions.AddResult(dbtx, rst.ID, &rst.TransactionResult)
 			if err != nil {
 				return fmt.Errorf("add result tx=%s nonce=%d %w", rst.ID, rst.Nonce, err)
@@ -721,7 +722,6 @@ func (c *Cache) ApplyLayer(
 		toCleanup[rst.Principal] = struct{}{}
 		if !c.has(rst.ID) {
 			RawTxCount.WithLabelValues(updated).Inc()
-			events.ReportResult(rst)
 			if err := transactions.Add(db, &rst.Transaction, time.Now()); err != nil {
 				return err
 			}

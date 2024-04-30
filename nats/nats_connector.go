@@ -117,15 +117,17 @@ func (n *NatsConnector) PublishLayer(layerUpdate *LayerUpdate) {
 		log.With().Warning("failed to serialize event")
 		panic("Failed to serialize layer")
 	}
-	if n.config.NatsAsyncLayers {
-		_, err = n.js.PublishAsync("layers", jsonData)
-		if err != nil {
-			panic("failed to publish layers: " + err.Error())
-		}
-	} else {
-		_, err = n.js.Publish("layers", jsonData)
-		if err != nil {
-			panic("failed to publish layers: " + err.Error())
+	if layerUpdate.Status > 0 {
+		if n.config.NatsAsyncLayers {
+			_, err = n.js.PublishAsync("layers", jsonData)
+			if err != nil {
+				panic("failed to publish layers: " + err.Error())
+			}
+		} else {
+			_, err = n.js.Publish("layers", jsonData)
+			if err != nil {
+				panic("failed to publish layers: " + err.Error())
+			}
 		}
 	}
 }
