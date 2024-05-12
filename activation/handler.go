@@ -471,6 +471,7 @@ func (h *Handler) storeAtx(ctx context.Context, atx *types.VerifiedActivationTx)
 		if err != nil && !errors.Is(err, sql.ErrObjectExists) {
 			return fmt.Errorf("add atx to db: %w", err)
 		}
+		events.ReportNewActivation(atx)
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("store atx: %w", err)
@@ -634,7 +635,6 @@ func (h *Handler) processATX(
 	if err != nil {
 		return nil, fmt.Errorf("cannot process atx %v: %w", atx.ShortString(), err)
 	}
-	events.ReportNewActivation(vAtx)
 	h.log.WithContext(ctx).With().Info(
 		"new atx", log.Inline(vAtx),
 		log.Bool("malicious", proof != nil))
