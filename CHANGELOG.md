@@ -2,6 +2,42 @@
 
 See [RELEASE](./RELEASE.md) for workflow instructions.
 
+## Release v1.5.6
+
+### Improvements
+
+* [#5943](https://github.com/spacemeshos/go-spacemesh/pull/5943) Fix timing out querying proof in 1:N in a presence of a broken Poet.
+
+  Previously, every identitiy waited for the full timeout time (~20 minutes) before giving up.
+
+## Release v1.5.5
+
+### Improvements
+
+* [#5969](https://github.com/spacemeshos/go-spacemesh/pull/5969) Increase ResponseMessage to 183500800
+
+## Release v1.5.4
+
+### Improvements
+
+* [#5963](https://github.com/spacemeshos/go-spacemesh/pull/5963) Increase supported number of ATXs to 5.5 Mio.
+
+* [#5952](https://github.com/spacemeshos/go-spacemesh/pull/5952) Optimized searching for a positioning ATX.
+  Instead of a slow database query the ATX builder now uses the in-memory ATX store to pick a positioning ATX.
+
+## Release v1.5.3
+
+### Improvements
+
+* [#5929](https://github.com/spacemeshos/go-spacemesh/pull/5929) Fix "no nonce" error when persisting malicious
+  (initial) ATXs.
+
+* [#5930](https://github.com/spacemeshos/go-spacemesh/pull/5930) Check if identity for a given malfeasance proof
+  exists when validating it.
+
+* [#5923](https://github.com/spacemeshos/go-spacemesh/pull/5923) Fix high memory consumption and performance issues
+  in the proposal handler.
+
 ## Release v1.5.2-hotfix1
 
 This release includes our first CVE fix. A vulnerability was found in the way a node handles incoming ATXs. We urge all
@@ -42,8 +78,6 @@ coins. Fixes an oversight in the genesis VM implementation.
 
 * [#5791](https://github.com/spacemeshos/go-spacemesh/pull/5791) Speed up ATX queries.
   This also fixes ambiguity of nonces for equivocating identities.
-
-* [#5856](https://github.com/spacemeshos/go-spacemesh/pull/5856) Bump github.com/spacemeshos/api/release/go to v1.37.0.
 
 ## Release v1.4.6
 
