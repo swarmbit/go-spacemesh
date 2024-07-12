@@ -4,6 +4,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/common/types"
 	"github.com/spacemeshos/go-spacemesh/log"
 	"github.com/spacemeshos/go-spacemesh/malfeasance/wire"
+	"github.com/spacemeshos/go-spacemesh/nats"
 )
 
 // EventMalfeasance includes the malfeasance proof.
@@ -33,6 +34,13 @@ func ReportMalfeasance(nodeID types.NodeID, mp *wire.MalfeasanceProof) {
 	if reporter != nil {
 		if err := reporter.malfeasanceEmitter.Emit(EventMalfeasance{Smesher: nodeID, Proof: mp}); err != nil {
 			log.With().Error("failed to emit malfeasance proof", log.Err(err))
+		}
+		if reporter.natsConnector != nil && mp != nil {
+			reporter.natsConnector.PublishMalfeasance(&nats.Malfeasance{
+				NodeID:   nodeID.String(),
+				LayerID:  mp.Layer.Uint32(),
+				Received: mp.Received().UnixMilli(),
+			})
 		}
 	}
 }
