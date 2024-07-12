@@ -23,6 +23,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/hare3"
 	"github.com/spacemeshos/go-spacemesh/hare3/eligibility"
 	"github.com/spacemeshos/go-spacemesh/miner"
+	"github.com/spacemeshos/go-spacemesh/nats"
 	"github.com/spacemeshos/go-spacemesh/p2p"
 	"github.com/spacemeshos/go-spacemesh/syncer"
 	timeConfig "github.com/spacemeshos/go-spacemesh/timesync/config"
@@ -59,6 +60,7 @@ type Config struct {
 	Beacon          beacon.Config              `mapstructure:"beacon"`
 	TIME            timeConfig.TimeConfig      `mapstructure:"time"`
 	VM              vm.Config                  `mapstructure:"vm"`
+	NATS            nats.Config           	   `mapstructure:"nats"`
 	Certifier       activation.CertifierConfig `mapstructure:"certifier"`
 	POST            activation.PostConfig      `mapstructure:"post"`
 	POSTService     activation.PostSupervisorConfig
@@ -190,6 +192,7 @@ func DefaultConfig() Config {
 		Tortoise:        tortoise.DefaultConfig(),
 		P2P:             p2p.DefaultConfig(),
 		API:             grpcserver.DefaultConfig(),
+		NATS:            nats.DefaultConfig(),
 		HARE3:           hare3.DefaultConfig(),
 		HareEligibility: eligibility.DefaultConfig(),
 		Beacon:          beacon.DefaultConfig(),
