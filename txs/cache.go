@@ -690,6 +690,9 @@ func (c *Cache) ApplyLayer(
 	// TODO(dshulyak) save results in vm
 	if err := db.WithTx(context.Background(), func(dbtx sql.Transaction) error {
 		for _, rst := range results {
+			if err := events.ReportResult(rst); err != nil {
+				c.logger.Error("Failed to emit tx results", zap.Stringer("tx_id", rst.ID), zap.Error(err))
+			}
 			err := transactions.AddResult(dbtx, rst.ID, &rst.TransactionResult)
 			if err != nil {
 				return fmt.Errorf("add result tx=%s nonce=%d %w", rst.ID, rst.Nonce, err)
@@ -708,9 +711,6 @@ func (c *Cache) ApplyLayer(
 			if err := transactions.Add(db, &rst.Transaction, time.Now()); err != nil {
 				return err
 			}
-		}
-		if err := events.ReportResult(rst); err != nil {
-			c.logger.Error("Failed to emit tx results", zap.Stringer("tx_id", rst.ID), zap.Error(err))
 		}
 	}
 

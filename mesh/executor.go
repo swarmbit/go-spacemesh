@@ -184,6 +184,7 @@ func (e *Executor) convertRewards(lid types.LayerID, rewards []types.AnyReward) 
 			SmesherID: atx.Node,
 			Coinbase:  atx.Coinbase,
 			Weight:    r.Weight,
+			AtxID:     r.AtxID,
 		})
 	}
 	sort.Slice(res, func(i, j int) bool {

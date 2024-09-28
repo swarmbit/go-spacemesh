@@ -23,6 +23,7 @@ import (
 	"github.com/spacemeshos/go-spacemesh/hare3/eligibility"
 	"github.com/spacemeshos/go-spacemesh/hare4"
 	"github.com/spacemeshos/go-spacemesh/miner"
+	"github.com/spacemeshos/go-spacemesh/nats"
 	"github.com/spacemeshos/go-spacemesh/p2p"
 	"github.com/spacemeshos/go-spacemesh/syncer"
 	"github.com/spacemeshos/go-spacemesh/syncer/atxsync"
@@ -190,6 +191,7 @@ func MainnetConfig() Config {
 			DataDir:  os.TempDir(),
 			Interval: 30 * time.Second,
 		},
+		NATS:        nats.DefaultConfig(),
 		P2P:         p2pconfig,
 		API:         grpcserver.DefaultConfig(),
 		TIME:        timeConfig.DefaultConfig(),

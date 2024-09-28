@@ -229,6 +229,19 @@ func (v *VM) Apply(
 	t4 := time.Now()
 	blockDurationWait.Observe(float64(time.Since(t3)))
 
+	for index, reward := range rewardsResult {
+		if err := events.ReportRewardReceived(types.Reward{
+			Layer:       reward.Layer,
+			Total:       reward.TotalReward,
+			LayerReward: reward.LayerReward,
+			Coinbase:    reward.Coinbase,
+			AtxID:       reward.AtxID,
+			SmesherID:   reward.SmesherID,
+		}, index); err != nil {
+			v.logger.Error("Failed to emit rewards", zap.Uint32("lid", reward.Layer.Uint32()), zap.Error(err))
+		}
+	}
+
 	for _, reward := range rewardsResult {
 		if err := rewards.Add(tx, &reward); err != nil {
 			return nil, nil, fmt.Errorf("%w: %w", core.ErrInternal, err)
@@ -268,11 +281,7 @@ func (v *VM) Apply(
 		}
 		return true
 	})
-	for _, reward := range rewardsResult {
-		if err := events.ReportRewardReceived(reward); err != nil {
-			v.logger.Error("Failed to emit rewards", zap.Uint32("lid", reward.Layer.Uint32()), zap.Error(err))
-		}
-	}
+
 	hash.PutHasher(hasher)
 
 	blockDurationPersist.Observe(float64(time.Since(t4)))

@@ -1,7 +1,9 @@
 package events
 
 import (
+	"encoding/hex"
 	"runtime/debug"
+	"strconv"
 	"sync"
 
 	"github.com/libp2p/go-libp2p/core/event"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/spacemeshos/go-spacemesh/common/types"
 	"github.com/spacemeshos/go-spacemesh/log"
+	"github.com/spacemeshos/go-spacemesh/nats"
 )
 
 // Subscription is a subscription to events.
@@ -25,13 +28,16 @@ var (
 // InitializeReporter initializes the event reporting interface with
 // a nonzero channel buffer. This is useful for testing, where we want reporting to
 // block.
-func InitializeReporter() {
+func InitializeReporter(natsConnector *nats.NatsConnector) {
 	mu.Lock()
 	defer mu.Unlock()
 	if reporter != nil {
 		return
 	}
-	reporter = newEventReporter()
+	if natsConnector != nil {
+		log.With().Info("Nat connector enabled on monitor")
+	}
+	reporter = newEventReporter(natsConnector)
 }
 
 // EventHook returns hook for logger.
@@ -64,7 +70,22 @@ func ReportNewTx(layerID types.LayerID, tx *types.Transaction) error {
 		Valid:       true,
 	}
 	if reporter != nil {
-		return reporter.transactionEmitter.Emit(txWithValidity)
+		if reporter.natsConnector != nil && txWithValidity.Valid {
+			reporter.natsConnector.PublishNewTransaction(&nats.Transaction{
+				ID:  hex.EncodeToString(txWithValidity.Transaction.ID.Bytes()),
+				Raw: txWithValidity.Transaction.Raw,
+				Header: &nats.TransactionHeader{
+					Principal:       txWithValidity.Transaction.Principal.String(),
+					TemplateAddress: txWithValidity.Transaction.TemplateAddress.String(),
+					Nonce:           txWithValidity.Transaction.Nonce,
+					Method:          txWithValidity.Transaction.Method,
+					LayerID:         layerID.Uint32(),
+				},
+			})
+		}
+		if err := reporter.transactionEmitter.Emit(txWithValidity); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -76,18 +97,49 @@ func ReportNewActivation(activation *types.ActivationTx) error {
 
 	activationTxEvent := ActivationTx{activation}
 	if reporter != nil {
-		return reporter.activationEmitter.Emit(activationTxEvent)
+		if reporter.natsConnector != nil && activation != nil {
+			reporter.natsConnector.PublishATX(&nats.Atx{
+				NodeID:            activation.SmesherID.String(),
+				AtxID:             hex.EncodeToString(activation.ID().Bytes()),
+				EffectiveNumUnits: activation.NumUnits,
+				BaseTick:          activation.BaseTickHeight,
+				TickCount:         activation.TickCount,
+				Received:          activation.Received().UnixMilli(),
+				Sequence:          activation.Sequence,
+				PublishEpoch:      activation.PublishEpoch.Uint32(),
+				Coinbase:          activation.Coinbase.String(),
+			})
+		}
+		if err := reporter.activationEmitter.Emit(activationTxEvent); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // ReportRewardReceived reports a new reward.
-func ReportRewardReceived(r types.Reward) error {
+func ReportRewardReceived(r types.Reward, index int) error {
 	mu.RLock()
 	defer mu.RUnlock()
 
 	if reporter != nil {
-		return reporter.rewardEmitter.Emit(r)
+		if reporter.natsConnector != nil {
+
+			rewardId := r.AtxID.String() + ":" + r.Layer.String() + ":" + strconv.Itoa(index) + ":" + strconv.FormatUint(r.Total, 10)
+
+			reporter.natsConnector.PublishRewards(&nats.Reward{
+				ID:          hex.EncodeToString([]byte(rewardId)),
+				Coinbase:    r.Coinbase.String(),
+				Total:       r.Total,
+				LayerReward: r.LayerReward,
+				NodeID:      r.SmesherID.String(),
+				AtxID:       hex.EncodeToString(r.AtxID.Bytes()),
+				Layer:       r.Layer.Uint32(),
+			})
+		}
+		if err := reporter.rewardEmitter.Emit(r); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -98,7 +150,15 @@ func ReportLayerUpdate(layer LayerUpdate) error {
 	defer mu.RUnlock()
 
 	if reporter != nil {
-		return reporter.layerEmitter.Emit(layer)
+		if reporter.natsConnector != nil {
+			reporter.natsConnector.PublishLayer(&nats.LayerUpdate{
+				LayerID: layer.LayerID.Uint32(),
+				Status:  layer.Status,
+			})
+		}
+		if err := reporter.layerEmitter.Emit(layer); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,7 +199,32 @@ func ReportNodeStatusUpdate() error {
 // ReportResult reports creation or receipt of a new tx receipt.
 func ReportResult(rst types.TransactionWithResult) error {
 	if reporter != nil {
-		return reporter.resultsEmitter.Emit(rst)
+		if reporter.natsConnector != nil {
+
+			addresses := make([]string, len(rst.TransactionResult.Addresses))
+			for i, a := range rst.TransactionResult.Addresses {
+				addresses[i] = a.String()
+			}
+			reporter.natsConnector.PublishTransactionResult(&nats.Transaction{
+				ID:  hex.EncodeToString(rst.Transaction.ID.Bytes()),
+				Raw: rst.Transaction.Raw,
+				Header: &nats.TransactionHeader{
+					Principal:       rst.Transaction.Principal.String(),
+					TemplateAddress: rst.Transaction.TemplateAddress.String(),
+					Nonce:           rst.Transaction.Nonce,
+					Method:          rst.Transaction.Method,
+					LayerID:         rst.TransactionResult.Layer.Uint32(),
+					Status:          uint8(rst.TransactionResult.Status),
+					Gas:             rst.TransactionResult.Gas,
+					Fee:             rst.TransactionResult.Fee,
+					BlockID:         rst.TransactionResult.Block.String(),
+					Addresses:       addresses,
+				},
+			})
+		}
+		if err := reporter.resultsEmitter.Emit(rst); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -164,6 +249,22 @@ func SubscribeTxs() (Subscription, error) {
 		return reporter.bus.Subscribe(new(Transaction))
 	}
 	return nil, nil
+}
+
+// SubscribeTxsResult subscribes to new transactions.
+func SubscribeTxsResult() Subscription {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	if reporter != nil {
+		sub, err := reporter.bus.Subscribe(new(types.TransactionWithResult))
+		if err != nil {
+			log.With().Panic("Failed to subscribe to transactions result")
+		}
+
+		return sub
+	}
+	return nil
 }
 
 // SubscribeActivations subscribes to activations.
@@ -343,6 +444,7 @@ type Account struct {
 
 // EventReporter is the struct that receives incoming events and dispatches them.
 type EventReporter struct {
+	natsConnector      *nats.NatsConnector
 	bus                event.Bus
 	transactionEmitter event.Emitter
 	activationEmitter  event.Emitter
@@ -380,7 +482,7 @@ func (r *EventReporter) subUserEvents(opts ...SubOpt) (*BufferedSubscription[Use
 	return sub, buf, nil
 }
 
-func newEventReporter() *EventReporter {
+func newEventReporter(natsConnector *nats.NatsConnector) *EventReporter {
 	bus := eventbus.NewBus()
 	transactionEmitter, err := bus.Emitter(new(Transaction))
 	if err != nil {
@@ -428,6 +530,7 @@ func newEventReporter() *EventReporter {
 	}
 
 	reporter := &EventReporter{
+		natsConnector:      natsConnector,
 		bus:                bus,
 		transactionEmitter: transactionEmitter,
 		activationEmitter:  activationEmitter,

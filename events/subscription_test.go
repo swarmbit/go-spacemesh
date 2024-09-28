@@ -10,7 +10,7 @@ import (
 )
 
 func TestSubscribe(t *testing.T) {
-	InitializeReporter()
+	InitializeReporter(nil)
 	t.Cleanup(CloseEventReporter)
 
 	sub, err := Subscribe[Transaction]()
@@ -30,7 +30,7 @@ func TestSubscribe(t *testing.T) {
 }
 
 func TestSubscribeFull(t *testing.T) {
-	InitializeReporter()
+	InitializeReporter(nil)
 	t.Cleanup(CloseEventReporter)
 
 	sub, err := Subscribe[Transaction](WithBuffer(2))

@@ -30,6 +30,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/multiformats/go-varint v0.0.7
 	github.com/natefinch/atomic v1.0.1
+	github.com/nats-io/nats.go v1.34.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
 	github.com/prometheus/client_golang v1.20.4
 	github.com/prometheus/client_model v0.6.1
@@ -172,6 +173,8 @@ require (
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/nats-io/nkeys v0.4.7 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nullstyle/go-xdr v0.0.0-20180726165426-f4c839f75077 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
